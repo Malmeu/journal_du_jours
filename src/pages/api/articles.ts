@@ -1,10 +1,15 @@
 import type { APIRoute } from 'astro';
 import { insertArticle, updateArticle, deleteArticle } from '../../lib/db.js';
+import { isAdminAuthenticated } from '../../lib/auth.ts';
 
 export const prerender = false;
 
 // POST: Créer un nouvel article
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, cookies }) => {
+  if (!isAdminAuthenticated(cookies)) {
+    return new Response(JSON.stringify({ success: false, error: "Non autorisé" }), { status: 401 });
+  }
+
   try {
     const data = await request.json();
     
@@ -40,7 +45,11 @@ export const POST: APIRoute = async ({ request }) => {
 };
 
 // PUT: Mettre à jour un article existant
-export const PUT: APIRoute = async ({ request }) => {
+export const PUT: APIRoute = async ({ request, cookies }) => {
+  if (!isAdminAuthenticated(cookies)) {
+    return new Response(JSON.stringify({ success: false, error: "Non autorisé" }), { status: 401 });
+  }
+
   try {
     const data = await request.json();
     if (!data.id) {
@@ -64,7 +73,11 @@ export const PUT: APIRoute = async ({ request }) => {
 };
 
 // DELETE: Supprimer un article
-export const DELETE: APIRoute = async ({ request }) => {
+export const DELETE: APIRoute = async ({ request, cookies }) => {
+  if (!isAdminAuthenticated(cookies)) {
+    return new Response(JSON.stringify({ success: false, error: "Non autorisé" }), { status: 401 });
+  }
+
   try {
     const url = new URL(request.url);
     const id = parseInt(url.searchParams.get('id') || '', 10);

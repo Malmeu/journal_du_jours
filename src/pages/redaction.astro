@@ -3,11 +3,34 @@ import Layout from '../layouts/Layout.astro';
 import Masthead from '../components/Masthead.astro';
 import SectionNav from '../components/SectionNav.astro';
 import { getEditionMetadata, getAllArticles } from '../lib/db.js';
+import { isAdminAuthenticated, setAdminSession, clearAdminSession, verifyAdminPassword } from '../lib/auth.ts';
 
 export const prerender = false;
 
+let authError = '';
+const url = new URL(Astro.request.url);
+
+// Traitement de la déconnexion
+if (url.searchParams.get('logout') === 'true') {
+  clearAdminSession(Astro.cookies);
+  return Astro.redirect('/redaction');
+}
+
+// Traitement de la tentative de connexion
+if (Astro.request.method === 'POST') {
+  const formData = await Astro.request.formData();
+  const password = formData.get('password')?.toString() || '';
+  if (verifyAdminPassword(password)) {
+    setAdminSession(Astro.cookies);
+    return Astro.redirect('/redaction');
+  } else {
+    authError = 'Mot de passe d\'administration incorrect.';
+  }
+}
+
+const isAuth = isAdminAuthenticated(Astro.cookies);
 const metadata = getEditionMetadata();
-const articles = getAllArticles();
+const articles = isAuth ? getAllArticles() : [];
 ---
 
 <Layout
@@ -18,224 +41,287 @@ const articles = getAllArticles();
     <Masthead metadata={metadata} />
     <SectionNav />
 
-    <!-- En-tête de la gestion d'édition -->
-    <div style="margin: 24px 0 20px 0; border-bottom: 2px solid var(--border-line); padding-bottom: 14px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
-        <div>
-          <span style="font-family: var(--font-sans); font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-crimson);">
-            Tableau de Bord Éditorial
-          </span>
-          <h1 style="font-family: var(--font-headline); font-size: 2.2rem; font-weight: 900; margin-top: 2px;">
-            Gestion des Articles & Flux RSS
-          </h1>
-          <p style="font-family: var(--font-body); font-style: italic; color: var(--ink-secondary); margin-top: 4px;">
-            Les articles proviennent automatiquement des flux d'actualité. Vous pouvez supprimer un article ou lui associer une image.
-          </p>
+    {!isAuth ? (
+      <!-- ÉCRAN DE VERROUILLAGE / ACCÈS SÉCURISÉ ADMIN -->
+      <div style="max-width: 480px; margin: 50px auto; border: 2px solid var(--border-line); background: var(--bg-paper-card); padding: 32px; box-shadow: 0 6px 24px rgba(0,0,0,0.12);">
+        <div style="font-family: var(--font-sans); font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent-crimson); margin-bottom: 6px;">
+          🔒 Accès Protégé
         </div>
+        <h1 style="font-family: var(--font-headline); font-size: 2rem; font-weight: 900; margin-bottom: 8px;">
+          Salle de Rédaction
+        </h1>
+        <p style="font-family: var(--font-body); font-size: 0.95rem; line-height: 1.45; color: var(--ink-secondary); margin-bottom: 22px;">
+          L'accès aux outils d'édition, d'ingestion RSS et de gestion de la base de données locale est réservé à l'équipe éditoriale.
+        </p>
 
-        <div style="display: flex; gap: 10px; align-items: center;">
-          <!-- Bouton de synchronisation RSS -->
+        {authError && (
+          <div style="padding: 10px 14px; background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; font-family: var(--font-sans); font-size: 0.8rem; font-weight: 700; margin-bottom: 18px; border-radius: 2px;">
+            ❌ {authError}
+          </div>
+        )}
+
+        <form method="POST" style="display: flex; flex-direction: column; gap: 16px;">
+          <div>
+            <label for="admin-pass" style="display: block; font-family: var(--font-sans); font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">
+              Mot de passe d'administration :
+            </label>
+            <input
+              type="password"
+              id="admin-pass"
+              name="password"
+              required
+              autofocus
+              placeholder="Saisissez votre mot de passe..."
+              style="width: 100%; padding: 10px 12px; font-family: var(--font-sans); font-size: 0.95rem; border: 1px solid var(--border-line); background: var(--bg-paper-light); color: var(--ink-primary);"
+            />
+          </div>
+
           <button
-            type="button"
-            id="btn-sync-rss"
-            class="reader-control-btn"
-            style="background-color: var(--border-line); color: var(--bg-paper); font-weight: 700; padding: 10px 16px; font-size: 0.82rem; letter-spacing: 0.04em;"
+            type="submit"
+            style="padding: 12px; background: var(--border-line); color: var(--bg-paper); font-family: var(--font-sans); font-weight: 800; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.06em; border: none; cursor: pointer; transition: opacity 0.15s ease;"
           >
-            🔄 Actualiser les articles (Flux RSS)
+            Déverrouiller l'accès →
           </button>
-          
-          <a href="/edition-pdf" class="reader-control-btn" style="padding: 10px 14px;">
-            📄 Édition PDF (A4)
+        </form>
+
+        <div style="margin-top: 20px; border-top: 1px solid var(--border-line-faint); padding-top: 12px; text-align: center;">
+          <a href="/" style="font-family: var(--font-sans); font-size: 0.78rem; color: var(--ink-muted); text-decoration: none;">
+            ← Revenir à la Une du journal
           </a>
         </div>
       </div>
-
-      <!-- Message d'état de la synchronisation -->
-      <div id="sync-status-box" style="display: none; margin-top: 14px; padding: 10px 14px; background: var(--bg-paper-card); border: 1px solid var(--border-line-light); font-family: var(--font-sans); font-size: 0.85rem;"></div>
-    </div>
-
-    <!-- Barre de statistiques et filtres -->
-    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-line-light); font-family: var(--font-sans); font-size: 0.8rem; margin-bottom: 18px;">
+    ) : (
+      <!-- TABLEAU DE BORD RÉDACTION (ACCÈS AUTORISÉ) -->
       <div>
-        <strong>{articles.length}</strong> articles enregistrés dans la base locale
-      </div>
-      <div style="display: flex; gap: 8px;">
-        <button type="button" class="reader-control-btn filter-btn" data-filter="all">Tous</button>
-        <button type="button" class="reader-control-btn filter-btn" data-filter="algerie">Algérie</button>
-        <button type="button" class="reader-control-btn filter-btn" data-filter="monde">Monde</button>
-        <button type="button" class="reader-control-btn filter-btn" data-filter="sport">Sport</button>
-        <button type="button" class="reader-control-btn filter-btn" data-filter="art-culture">Art & Culture</button>
-      </div>
-    </div>
-
-    <!-- Liste des articles avec gestion d'image et suppression -->
-    <div class="articles-management-list" style="display: flex; flex-direction: column; gap: 16px;">
-      {articles.map((art: any) => (
-        <div
-          class="article-manage-card"
-          data-section={art.section}
-          style="display: grid; grid-template-columns: 160px 1fr 180px; gap: 20px; border: 1px solid var(--border-line-light); background: var(--bg-paper-card); padding: 16px; align-items: center;"
-        >
-          <!-- Vignette / Espace Image -->
-          <div style="text-align: center;">
-            {art.image_url ? (
-              <div style="position: relative; border: 1px solid var(--border-line); overflow: hidden; background: #000;">
-                <img
-                  src={art.image_url}
-                  alt={art.title}
-                  style="width: 100%; height: 105px; object-fit: cover; display: block;"
-                />
-              </div>
-            ) : (
-              <div style="height: 105px; border: 1px dashed var(--border-line-light); display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bg-paper-light); color: var(--ink-faint); font-family: var(--font-sans); font-size: 0.72rem; padding: 6px;">
-                <span>🖼️</span>
-                <span>Sans image</span>
-              </div>
-            )}
-            
-            <button
-              type="button"
-              class="btn-edit-image"
-              data-id={art.id}
-              data-title={art.title}
-              data-current-image={art.image_url || ''}
-              data-current-caption={art.image_caption || ''}
-              style="margin-top: 8px; width: 100%; padding: 5px; font-family: var(--font-sans); font-size: 0.7rem; font-weight: 700; background: var(--bg-paper-light); border: 1px solid var(--border-line); cursor: pointer;"
-            >
-              {art.image_url ? '📷 Remplacer image' : '➕ Ajouter une image'}
-            </button>
-          </div>
-
-          <!-- Métadonnées & Résumé -->
-          <div>
-            <div style="display: flex; gap: 8px; align-items: center; font-family: var(--font-sans); font-size: 0.68rem; font-weight: 800; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 4px;">
-              <span style="color: var(--accent-crimson);">{art.section}</span>
-              <span>•</span>
-              <span>{art.category_tag}</span>
-              <span>•</span>
-              <span>{art.published_date}</span>
+        <div style="margin: 24px 0 20px 0; border-bottom: 2px solid var(--border-line); padding-bottom: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+            <div>
+              <span style="font-family: var(--font-sans); font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-crimson);">
+                Tableau de Bord Éditorial (Connecté)
+              </span>
+              <h1 style="font-family: var(--font-headline); font-size: 2.2rem; font-weight: 900; margin-top: 2px;">
+                Gestion des Articles & Flux RSS
+              </h1>
+              <p style="font-family: var(--font-body); font-style: italic; color: var(--ink-secondary); margin-top: 4px;">
+                Les articles proviennent automatiquement des flux d'actualité. Vous pouvez supprimer un article ou lui associer une image.
+              </p>
             </div>
 
-            <h3 style="font-family: var(--font-headline); font-size: 1.15rem; font-weight: 800; line-height: 1.25; margin-bottom: 6px;">
-              <a href={`/article/${art.slug}`} target="_blank" style="color: inherit; text-decoration: none;">
-                {art.title}
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <!-- Bouton de synchronisation RSS -->
+              <button
+                type="button"
+                id="btn-sync-rss"
+                class="reader-control-btn"
+                style="background-color: var(--border-line); color: var(--bg-paper); font-weight: 700; padding: 10px 16px; font-size: 0.82rem; letter-spacing: 0.04em;"
+              >
+                🔄 Actualiser les articles (Flux RSS)
+              </button>
+              
+              <a href="/edition-pdf" class="reader-control-btn" style="padding: 10px 14px;">
+                📄 Édition PDF (A4)
               </a>
+
+              <!-- Déconnexion -->
+              <a
+                href="/redaction?logout=true"
+                class="reader-control-btn"
+                style="color: #b00; border-color: #b00; font-weight: 700; padding: 10px 14px;"
+                title="Fermer la session administrateur"
+              >
+                🚪 Déconnexion
+              </a>
+            </div>
+          </div>
+
+          <!-- Message d'état de la synchronisation -->
+          <div id="sync-status-box" style="display: none; margin-top: 14px; padding: 10px 14px; background: var(--bg-paper-card); border: 1px solid var(--border-line-light); font-family: var(--font-sans); font-size: 0.85rem;"></div>
+        </div>
+
+        <!-- Barre de statistiques et filtres -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-line-light); font-family: var(--font-sans); font-size: 0.8rem; margin-bottom: 18px;">
+          <div>
+            <strong>{articles.length}</strong> articles enregistrés dans la base locale
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="reader-control-btn filter-btn" data-filter="all">Tous</button>
+            <button type="button" class="reader-control-btn filter-btn" data-filter="algerie">Algérie</button>
+            <button type="button" class="reader-control-btn filter-btn" data-filter="monde">Monde</button>
+            <button type="button" class="reader-control-btn filter-btn" data-filter="sport">Sport</button>
+            <button type="button" class="reader-control-btn filter-btn" data-filter="art-culture">Art & Culture</button>
+          </div>
+        </div>
+
+        <!-- Liste des articles avec gestion d'image et suppression -->
+        <div class="articles-management-list" style="display: flex; flex-direction: column; gap: 16px;">
+          {articles.map((art: any) => (
+            <div
+              class="article-manage-card"
+              data-section={art.section}
+              style="display: grid; grid-template-columns: 160px 1fr 180px; gap: 20px; border: 1px solid var(--border-line-light); background: var(--bg-paper-card); padding: 16px; align-items: center;"
+            >
+              <!-- Vignette / Espace Image -->
+              <div style="text-align: center;">
+                {art.image_url ? (
+                  <div style="position: relative; border: 1px solid var(--border-line); overflow: hidden; background: #000;">
+                    <img
+                      src={art.image_url}
+                      alt={art.title}
+                      style="width: 100%; height: 105px; object-fit: cover; display: block;"
+                    />
+                  </div>
+                ) : (
+                  <div style="height: 105px; border: 1px dashed var(--border-line-light); display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bg-paper-light); color: var(--ink-faint); font-family: var(--font-sans); font-size: 0.72rem; padding: 6px;">
+                    <span>🖼️</span>
+                    <span>Sans image</span>
+                  </div>
+                )}
+                
+                <button
+                  type="button"
+                  class="btn-edit-image"
+                  data-id={art.id}
+                  data-title={art.title}
+                  data-current-image={art.image_url || ''}
+                  data-current-caption={art.image_caption || ''}
+                  style="margin-top: 8px; width: 100%; padding: 5px; font-family: var(--font-sans); font-size: 0.7rem; font-weight: 700; background: var(--bg-paper-light); border: 1px solid var(--border-line); cursor: pointer;"
+                >
+                  {art.image_url ? '📷 Remplacer image' : '➕ Ajouter une image'}
+                </button>
+              </div>
+
+              <!-- Métadonnées & Résumé -->
+              <div>
+                <div style="display: flex; gap: 8px; align-items: center; font-family: var(--font-sans); font-size: 0.68rem; font-weight: 800; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 4px;">
+                  <span style="color: var(--accent-crimson);">{art.section}</span>
+                  <span>•</span>
+                  <span>{art.category_tag}</span>
+                  <span>•</span>
+                  <span>{art.published_date}</span>
+                </div>
+
+                <h3 style="font-family: var(--font-headline); font-size: 1.15rem; font-weight: 800; line-height: 1.25; margin-bottom: 6px;">
+                  <a href={`/article/${art.slug}`} target="_blank" style="color: inherit; text-decoration: none;">
+                    {art.title}
+                  </a>
+                </h3>
+
+                <p style="font-family: var(--font-body); font-size: 0.88rem; line-height: 1.4; color: var(--ink-secondary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                  {art.summary}
+                </p>
+
+                {art.image_caption && (
+                  <div style="font-family: var(--font-body); font-style: italic; font-size: 0.75rem; color: var(--ink-muted); margin-top: 4px;">
+                    Légende: {art.image_caption}
+                  </div>
+                )}
+              </div>
+
+              <!-- Actions (Lire & Supprimer) -->
+              <div style="display: flex; flex-direction: column; gap: 8px; align-items: stretch; border-left: 1px solid var(--border-line-faint); padding-left: 16px;">
+                <a
+                  href={`/article/${art.slug}`}
+                  target="_blank"
+                  class="reader-control-btn"
+                  style="text-align: center; justify-content: center; font-weight: 600;"
+                >
+                  Lire l'article ↗
+                </a>
+
+                <button
+                  type="button"
+                  class="btn-delete-article"
+                  data-id={art.id}
+                  style="padding: 7px 12px; background: transparent; border: 1px solid #c33; color: #b00; font-family: var(--font-sans); font-size: 0.75rem; font-weight: 700; cursor: pointer; border-radius: 2px; transition: all 0.15s ease;"
+                  onmouseover="this.style.background='#b00'; this.style.color='#fff';"
+                  onmouseout="this.style.background='transparent'; this.style.color='#b00';"
+                >
+                  🗑️ Supprimer l'article
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <!-- Modale d'ajout / modification d'image -->
+        <dialog id="image-modal" style="margin: auto; border: 2px solid var(--border-line); background: var(--bg-paper); padding: 24px; max-width: 540px; width: 90vw; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+          <form id="image-form" method="dialog" style="display: flex; flex-direction: column; gap: 14px;">
+            <h3 id="modal-article-title" style="font-family: var(--font-headline); font-size: 1.25rem; font-weight: 900; border-bottom: 1px solid var(--border-line); padding-bottom: 6px;">
+              Associer une image à l'article
             </h3>
 
-            <p style="font-family: var(--font-body); font-size: 0.88rem; line-height: 1.4; color: var(--ink-secondary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
-              {art.summary}
-            </p>
+            <input type="hidden" id="modal-article-id" />
 
-            {art.image_caption && (
-              <div style="font-family: var(--font-body); font-style: italic; font-size: 0.75rem; color: var(--ink-muted); margin-top: 4px;">
-                Légende: {art.image_caption}
+            <div>
+              <label style="font-family: var(--font-sans); font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">
+                Choisir une illustration de gravure de presse locale :
+              </label>
+              <select
+                id="modal-image-select"
+                style="width: 100%; padding: 8px; font-family: var(--font-sans); border: 1px solid var(--border-line-light); background: var(--bg-paper-light); margin-top: 4px;"
+                onchange="document.getElementById('modal-image-url').value = this.value"
+              >
+                <option value="">-- Sélectionner un visuel presse --</option>
+                <option value="/images/alger_headline.jpg">Gravure de presse — Alger & Maqam Echahid</option>
+                <option value="/images/world_fiber.jpg">Carte d'imprimerie — Méditerranée & Câbles mondiaux</option>
+                <option value="/images/tech_developers.jpg">Atelier de presse — Équipe & Laboratoire DZ</option>
+              </select>
+            </div>
+
+            <div>
+              <label style="font-family: var(--font-sans); font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">
+                Ou saisir une URL d'image personnalisée (JPG, PNG, WebP) :
+              </label>
+              <input
+                type="url"
+                id="modal-image-url"
+                placeholder="https://example.com/photo.jpg ou /images/..."
+                style="width: 100%; padding: 8px; font-family: var(--font-mono); font-size: 0.8rem; border: 1px solid var(--border-line-light); background: var(--bg-paper-light); margin-top: 4px;"
+              />
+            </div>
+
+            <div>
+              <label style="font-family: var(--font-sans); font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">
+                Légende / Crédit de l'image :
+              </label>
+              <input
+                type="text"
+                id="modal-image-caption"
+                placeholder="Ex: Photo de presse — Correspondance locale"
+                style="width: 100%; padding: 8px; font-family: var(--font-body); font-style: italic; border: 1px solid var(--border-line-light); background: var(--bg-paper-light); margin-top: 4px;"
+              />
+            </div>
+
+            <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 10px; border-top: 1px solid var(--border-line-light); padding-top: 12px;">
+              <button
+                type="button"
+                id="btn-remove-image"
+                style="background: transparent; border: 1px solid #b00; color: #b00; padding: 8px 12px; font-family: var(--font-sans); font-size: 0.75rem; font-weight: 700; cursor: pointer;"
+              >
+                Retirer l'image
+              </button>
+
+              <div style="display: flex; gap: 8px;">
+                <button
+                  type="button"
+                  onclick="document.getElementById('image-modal').close()"
+                  style="padding: 8px 14px; background: transparent; border: 1px solid var(--border-line-light); font-family: var(--font-sans); font-size: 0.75rem; cursor: pointer;"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  id="btn-save-image"
+                  style="padding: 8px 16px; background: var(--border-line); color: var(--bg-paper); font-family: var(--font-sans); font-size: 0.75rem; font-weight: 800; border: none; cursor: pointer;"
+                >
+                  Enregistrer l'image
+                </button>
               </div>
-            )}
-          </div>
-
-          <!-- Actions (Lire & Supprimer) -->
-          <div style="display: flex; flex-direction: column; gap: 8px; align-items: stretch; border-left: 1px solid var(--border-line-faint); padding-left: 16px;">
-            <a
-              href={`/article/${art.slug}`}
-              target="_blank"
-              class="reader-control-btn"
-              style="text-align: center; justify-content: center; font-weight: 600;"
-            >
-              Lire l'article ↗
-            </a>
-
-            <button
-              type="button"
-              class="btn-delete-article"
-              data-id={art.id}
-              style="padding: 7px 12px; background: transparent; border: 1px solid #c33; color: #b00; font-family: var(--font-sans); font-size: 0.75rem; font-weight: 700; cursor: pointer; border-radius: 2px; transition: all 0.15s ease;"
-              onmouseover="this.style.background='#b00'; this.style.color='#fff';"
-              onmouseout="this.style.background='transparent'; this.style.color='#b00';"
-            >
-              🗑️ Supprimer l'article
-            </button>
-          </div>
-        </div>
-      ))}
-    </div>
-
-    <!-- Modale d'ajout / modification d'image -->
-    <dialog id="image-modal" style="margin: auto; border: 2px solid var(--border-line); background: var(--bg-paper); padding: 24px; max-width: 540px; width: 90vw; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
-      <form id="image-form" method="dialog" style="display: flex; flex-direction: column; gap: 14px;">
-        <h3 id="modal-article-title" style="font-family: var(--font-headline); font-size: 1.25rem; font-weight: 900; border-bottom: 1px solid var(--border-line); padding-bottom: 6px;">
-          Associer une image à l'article
-        </h3>
-
-        <input type="hidden" id="modal-article-id" />
-
-        <div>
-          <label style="font-family: var(--font-sans); font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">
-            Choisir une illustration de gravure de presse locale :
-          </label>
-          <select
-            id="modal-image-select"
-            style="width: 100%; padding: 8px; font-family: var(--font-sans); border: 1px solid var(--border-line-light); background: var(--bg-paper-light); margin-top: 4px;"
-            onchange="document.getElementById('modal-image-url').value = this.value"
-          >
-            <option value="">-- Sélectionner un visuel presse --</option>
-            <option value="/images/alger_headline.jpg">Gravure de presse — Alger & Maqam Echahid</option>
-            <option value="/images/world_fiber.jpg">Carte d'imprimerie — Méditerranée & Câbles mondiaux</option>
-            <option value="/images/tech_developers.jpg">Atelier de presse — Équipe & Laboratoire DZ</option>
-          </select>
-        </div>
-
-        <div>
-          <label style="font-family: var(--font-sans); font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">
-            Ou saisir une URL d'image personnalisée (JPG, PNG, WebP) :
-          </label>
-          <input
-            type="url"
-            id="modal-image-url"
-            placeholder="https://example.com/photo.jpg ou /images/..."
-            style="width: 100%; padding: 8px; font-family: var(--font-mono); font-size: 0.8rem; border: 1px solid var(--border-line-light); background: var(--bg-paper-light); margin-top: 4px;"
-          />
-        </div>
-
-        <div>
-          <label style="font-family: var(--font-sans); font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">
-            Légende / Crédit de l'image :
-          </label>
-          <input
-            type="text"
-            id="modal-image-caption"
-            placeholder="Ex: Photo de presse — Correspondance locale"
-            style="width: 100%; padding: 8px; font-family: var(--font-body); font-style: italic; border: 1px solid var(--border-line-light); background: var(--bg-paper-light); margin-top: 4px;"
-          />
-        </div>
-
-        <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 10px; border-top: 1px solid var(--border-line-light); padding-top: 12px;">
-          <button
-            type="button"
-            id="btn-remove-image"
-            style="background: transparent; border: 1px solid #b00; color: #b00; padding: 8px 12px; font-family: var(--font-sans); font-size: 0.75rem; font-weight: 700; cursor: pointer;"
-          >
-            Retirer l'image
-          </button>
-
-          <div style="display: flex; gap: 8px;">
-            <button
-              type="button"
-              onclick="document.getElementById('image-modal').close()"
-              style="padding: 8px 14px; background: transparent; border: 1px solid var(--border-line-light); font-family: var(--font-sans); font-size: 0.75rem; cursor: pointer;"
-            >
-              Annuler
-            </button>
-            <button
-              type="button"
-              id="btn-save-image"
-              style="padding: 8px 16px; background: var(--border-line); color: var(--bg-paper); font-family: var(--font-sans); font-size: 0.75rem; font-weight: 800; border: none; cursor: pointer;"
-            >
-              Enregistrer l'image
-            </button>
-          </div>
-        </div>
-      </form>
-    </dialog>
+            </div>
+          </form>
+        </dialog>
+      </div>
+    )}
 
   </main>
 
@@ -298,37 +384,41 @@ const articles = getAllArticles();
       });
     });
 
-    btnSaveImage.addEventListener('click', async () => {
-      const id = modalArticleId.value;
-      const imageUrl = modalImageUrl.value.trim();
-      const imageCaption = modalImageCaption.value.trim();
+    if (btnSaveImage) {
+      btnSaveImage.addEventListener('click', async () => {
+        const id = modalArticleId.value;
+        const imageUrl = modalImageUrl.value.trim();
+        const imageCaption = modalImageCaption.value.trim();
 
-      const res = await fetch('/api/update-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, image_url: imageUrl, image_caption: imageCaption })
+        const res = await fetch('/api/update-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, image_url: imageUrl, image_caption: imageCaption })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          modal.close();
+          window.location.reload();
+        }
       });
+    }
 
-      const data = await res.json();
-      if (data.success) {
-        modal.close();
-        window.location.reload();
-      }
-    });
-
-    btnRemoveImage.addEventListener('click', async () => {
-      const id = modalArticleId.value;
-      const res = await fetch('/api/update-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, image_url: null, image_caption: '' })
+    if (btnRemoveImage) {
+      btnRemoveImage.addEventListener('click', async () => {
+        const id = modalArticleId.value;
+        const res = await fetch('/api/update-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, image_url: null, image_caption: '' })
+        });
+        const data = await res.json();
+        if (data.success) {
+          modal.close();
+          window.location.reload();
+        }
       });
-      const data = await res.json();
-      if (data.success) {
-        modal.close();
-        window.location.reload();
-      }
-    });
+    }
 
     // Suppression d'un article
     document.querySelectorAll('.btn-delete-article').forEach((btn) => {
