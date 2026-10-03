@@ -1,6 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import path from 'node:path';
 import fs from 'node:fs';
+import { supabase } from './supabase.ts';
 
 const DB_DIR = path.resolve(process.cwd(), 'data');
 if (!fs.existsSync(DB_DIR)) {
@@ -416,13 +417,42 @@ export function insertArticle(data) {
       read_time, summary, content, image_url, image_caption, is_headline, is_brief, is_featured, order_rank, source_url
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
-  return stmt.run(
+  const result = stmt.run(
     data.slug, data.title, data.subtitle || '', data.section, data.category_tag,
     data.author, data.published_date, data.read_time || '3 min',
     data.summary, data.content, data.image_url || null, data.image_caption || '',
     data.is_headline ? 1 : 0, data.is_brief ? 1 : 0, data.is_featured ? 1 : 0, data.order_rank || 0,
     data.source_url || null
   );
+
+  // Synchronisation Supabase en arrière-plan
+  try {
+    supabase.from('articles').upsert({
+      slug: data.slug,
+      title: data.title,
+      subtitle: data.subtitle || null,
+      section: data.section,
+      category_tag: data.category_tag,
+      author: data.author,
+      published_date: data.published_date,
+      read_time: data.read_time || '3 min',
+      summary: data.summary,
+      content: data.content,
+      image_url: data.image_url || null,
+      image_caption: data.image_caption || '',
+      is_headline: data.is_headline ? 1 : 0,
+      is_brief: data.is_brief ? 1 : 0,
+      is_featured: data.is_featured ? 1 : 0,
+      order_rank: data.order_rank || 0,
+      source_url: data.source_url || null
+    }, { onConflict: 'slug' }).then(({ error }) => {
+      if (error) console.error('Erreur synchro Supabase insertArticle:', error.message);
+    });
+  } catch (e) {
+    console.error('Exception synchro Supabase:', e);
+  }
+
+  return result;
 }
 
 export function updateArticle(id, data) {
@@ -432,21 +462,82 @@ export function updateArticle(id, data) {
       read_time = ?, summary = ?, content = ?, image_url = ?, image_caption = ?, is_headline = ?, is_brief = ?, is_featured = ?, order_rank = ?
     WHERE id = ?
   `);
-  return stmt.run(
+  const result = stmt.run(
     data.slug, data.title, data.subtitle || '', data.section, data.category_tag,
     data.author, data.published_date, data.read_time || '3 min',
     data.summary, data.content, data.image_url || null, data.image_caption || '',
     data.is_headline ? 1 : 0, data.is_brief ? 1 : 0, data.is_featured ? 1 : 0, data.order_rank || 0,
     id
   );
+
+  // Synchronisation Supabase en arrière-plan
+  try {
+    const existing = db.prepare('SELECT slug FROM articles WHERE id = ?').get(id);
+    if (existing?.slug) {
+      supabase.from('articles').update({
+        title: data.title,
+        subtitle: data.subtitle || null,
+        section: data.section,
+        category_tag: data.category_tag,
+        author: data.author,
+        published_date: data.published_date,
+        read_time: data.read_time || '3 min',
+        summary: data.summary,
+        content: data.content,
+        image_url: data.image_url || null,
+        image_caption: data.image_caption || '',
+        is_headline: data.is_headline ? 1 : 0,
+        is_brief: data.is_brief ? 1 : 0,
+        is_featured: data.is_featured ? 1 : 0,
+        order_rank: data.order_rank || 0
+      }).eq('slug', existing.slug).then(({ error }) => {
+        if (error) console.error('Erreur synchro Supabase updateArticle:', error.message);
+      });
+    }
+  } catch (e) {
+    console.error('Exception synchro Supabase update:', e);
+  }
+
+  return result;
 }
 
 export function deleteArticle(id) {
-  return db.prepare('DELETE FROM articles WHERE id = ?').run(id);
+  const existing = db.prepare('SELECT slug FROM articles WHERE id = ?').get(id);
+  const result = db.prepare('DELETE FROM articles WHERE id = ?').run(id);
+
+  // Synchronisation Supabase en arrière-plan
+  if (existing?.slug) {
+    try {
+      supabase.from('articles').delete().eq('slug', existing.slug).then(({ error }) => {
+        if (error) console.error('Erreur synchro Supabase deleteArticle:', error.message);
+      });
+    } catch (e) {
+      console.error('Exception synchro Supabase delete:', e);
+    }
+  }
+
+  return result;
 }
 
 export function updateArticleImage(id, imageUrl, imageCaption = '') {
-  return db.prepare('UPDATE articles SET image_url = ?, image_caption = ? WHERE id = ?').run(imageUrl, imageCaption, id);
+  const existing = db.prepare('SELECT slug FROM articles WHERE id = ?').get(id);
+  const result = db.prepare('UPDATE articles SET image_url = ?, image_caption = ? WHERE id = ?').run(imageUrl, imageCaption, id);
+
+  // Synchronisation Supabase en arrière-plan
+  if (existing?.slug) {
+    try {
+      supabase.from('articles').update({
+        image_url: imageUrl,
+        image_caption: imageCaption
+      }).eq('slug', existing.slug).then(({ error }) => {
+        if (error) console.error('Erreur synchro Supabase updateArticleImage:', error.message);
+      });
+    } catch (e) {
+      console.error('Exception synchro Supabase image:', e);
+    }
+  }
+
+  return result;
 }
 
 export function getArticleBySourceUrl(sourceUrl) {
