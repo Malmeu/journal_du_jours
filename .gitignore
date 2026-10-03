@@ -4,6 +4,7 @@ node_modules/
 # Sorties de build
 dist/
 .astro/
+.vercel/
 
 # Base de données locale générée au runtime
 data/*.db

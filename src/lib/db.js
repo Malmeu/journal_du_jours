@@ -3,16 +3,42 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { supabase } from './supabase.ts';
 
-const DB_DIR = path.resolve(process.cwd(), 'data');
-if (!fs.existsSync(DB_DIR)) {
-  fs.mkdirSync(DB_DIR, { recursive: true });
+// Gestion de l'environnement Vercel Serverless (process.cwd est en lecture seule, seul /tmp est inscriptible)
+const isVercel = Boolean(process.env.VERCEL || process.env.NOW_REGION);
+let DB_DIR = path.resolve(process.cwd(), 'data');
+let DB_PATH = path.join(DB_DIR, 'journal.db');
+
+if (isVercel) {
+  DB_DIR = '/tmp/mon_journal_data';
+  const tmpDbPath = path.join(DB_DIR, 'journal.db');
+  try {
+    if (!fs.existsSync(DB_DIR)) {
+      fs.mkdirSync(DB_DIR, { recursive: true });
+    }
+    // Copie de la base initiale si présente dans le projet
+    const originalDb = path.resolve(process.cwd(), 'data', 'journal.db');
+    if (fs.existsSync(originalDb) && !fs.existsSync(tmpDbPath)) {
+      fs.copyFileSync(originalDb, tmpDbPath);
+    }
+  } catch (err) {
+    console.warn('Notice Vercel FS setup:', err);
+  }
+  DB_PATH = tmpDbPath;
+} else {
+  if (!fs.existsSync(DB_DIR)) {
+    fs.mkdirSync(DB_DIR, { recursive: true });
+  }
 }
 
-const DB_PATH = path.join(DB_DIR, 'journal.db');
-const db = new DatabaseSync(DB_PATH);
-
-// Activation du mode WAL pour de meilleures performances de lecture/écriture concurrentes
-db.exec(`PRAGMA journal_mode = WAL;`);
+let db;
+try {
+  db = new DatabaseSync(DB_PATH);
+  // Activation du mode WAL pour de meilleures performances
+  db.exec(`PRAGMA journal_mode = WAL;`);
+} catch (e) {
+  console.warn('Fallback SQLite mémoire:', e);
+  db = new DatabaseSync(':memory:');
+}
 
 // Schéma des tables
 db.exec(`
