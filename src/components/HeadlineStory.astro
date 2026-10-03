@@ -1,0 +1,66 @@
+---
+interface Props {
+  article: {
+    slug: string;
+    title: string;
+    subtitle?: string;
+    category_tag: string;
+    summary: string;
+    content: string;
+    image_url?: string;
+    image_caption?: string;
+    author: string;
+    read_time: string;
+  };
+}
+
+const { article } = Astro.props;
+---
+
+<article class="headline-story">
+  <!-- Rubrique et horodatage -->
+  <div class="story-category-tag">
+    {article.category_tag}
+  </div>
+
+  <!-- Grand Titre de Presse -->
+  <h1 class="headline-title">
+    <a href={`/article/${article.slug}`}>
+      {article.title}
+    </a>
+  </h1>
+
+  <!-- Espace Image de Presse (avec l'illustration gravée et légende fine) -->
+  {article.image_url && (
+    <figure class="press-figure">
+      <img
+        src={article.image_url}
+        alt={article.title}
+        loading="eager"
+        fetchpriority="high"
+      />
+      {article.image_caption && (
+        <figcaption class="press-caption">
+          {article.image_caption}
+        </figcaption>
+      )}
+    </figure>
+  )}
+
+  <!-- Chapeau de l'article -->
+  <div class="headline-lead-text">
+    <p>{article.summary}</p>
+  </div>
+
+  <!-- Barre d'action et métadonnées -->
+  <div class="headline-actions">
+    <div>
+      <a href={`/article/${article.slug}`} class="read-link-btn">
+        Lire l'article complet ({article.read_time}) →
+      </a>
+    </div>
+    <div style="font-family: var(--font-sans); color: var(--ink-muted); font-size: 0.75rem;">
+      Par <strong>{article.author}</strong>
+    </div>
+  </div>
+</article>

@@ -1,0 +1,80 @@
+---
+interface Props {
+  currentSection?: string;
+}
+
+const { currentSection = 'tous' } = Astro.props;
+
+const sections = [
+  { id: 'tous', label: "Toute l'Édition", href: '/' },
+  { id: 'algerie', label: "Politique & Algérie", href: '/rubrique/algerie' },
+  { id: 'monde', label: "Géopolitique & Monde", href: '/rubrique/monde' },
+  { id: 'sport', label: "Sport", href: '/rubrique/sport' },
+  { id: 'art-culture', label: "Art & Culture", href: '/rubrique/art-culture' },
+  { id: 'economie-tech', label: "Économie & Tech", href: '/rubrique/economie-tech' },
+];
+---
+
+<nav class="newspaper-nav-bar no-print">
+  <ul class="nav-sections">
+    {sections.map((sec) => (
+      <li>
+        <a
+          href={sec.href}
+          class={currentSection === sec.id ? 'active' : ''}
+        >
+          {sec.label}
+        </a>
+      </li>
+    ))}
+  </ul>
+
+  <div class="nav-controls">
+    <!-- Lien vers l'édition PDF A4 imprimable -->
+    <a
+      href="/edition-pdf"
+      class="reader-control-btn"
+      style="font-weight: 700; background: var(--border-line); color: var(--bg-paper);"
+      title="Voir et imprimer l'édition complète au format journal A4"
+    >
+      📄 Édition PDF (A4)
+    </a>
+    <!-- Sélecteur de papier / thème de lecture -->
+    <div style="display: flex; gap: 4px;">
+      <button
+        type="button"
+        class="reader-control-btn"
+        title="Papier Journal Traditionnel"
+        onclick="window.setJournalTheme('paper')"
+      >
+        📰 Papier
+      </button>
+      <button
+        type="button"
+        class="reader-control-btn"
+        title="Fond Blanc Épuré"
+        onclick="window.setJournalTheme('light')"
+      >
+        ☀️ Clair
+      </button>
+      <button
+        type="button"
+        class="reader-control-btn"
+        title="Encre Nocturne"
+        onclick="window.setJournalTheme('dark')"
+      >
+        🌙 Nuit
+      </button>
+    </div>
+
+    <!-- Lien vers l'espace de rédaction / base locale -->
+    <a
+      href="/redaction"
+      class="reader-control-btn"
+      style="font-weight: 700; border-color: var(--border-line);"
+      title="Ajouter ou gérer les articles dans la base locale"
+    >
+      ✍️ Rédaction DB
+    </a>
+  </div>
+</nav>

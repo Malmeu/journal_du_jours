@@ -1,0 +1,53 @@
+---
+interface Props {
+  metadata: {
+    paper_name: string;
+    motto: string;
+    edition_number: string;
+    edition_date: string;
+    edition_tag: string;
+    top_left_banner: string;
+    top_right_banner: string;
+  };
+}
+
+const { metadata } = Astro.props;
+
+// Parsing du titre pour styliser comme sur la maquette :
+// "Malmeu Matin — DZ Tech" -> Malmeu (Gras) Matin (Italique) — DZ Tech (Gras/Italique)
+---
+
+<header class="newspaper-header">
+  <!-- Ligne fine supérieure -->
+  <div class="rule-thin"></div>
+
+  <!-- Sur-titre double (gauche / droite) -->
+  <div class="newspaper-top-bar">
+    <span>{metadata.top_left_banner}</span>
+    <span>{metadata.top_right_banner}</span>
+  </div>
+
+  <!-- Filet très fin -->
+  <div class="rule-thin" style="opacity: 0.5;"></div>
+
+  <!-- Manchette centrale monumentale -->
+  <div class="newspaper-masthead">
+    <a href="/" class="masthead-title">
+      Malmeu <em>Matin</em> <span style="font-weight: 300;">—</span> <em>DZ Tech</em>
+    </a>
+    <p class="masthead-motto">{metadata.motto}</p>
+  </div>
+
+  <!-- Bandeau de métadonnées (Numéro, Date, Édition) -->
+  <div class="newspaper-meta-strip">
+    <div class="meta-item">
+      <span>{metadata.edition_number}</span>
+    </div>
+    <div class="meta-item" style="letter-spacing: 0.12em;">
+      <span>{metadata.edition_date}</span>
+    </div>
+    <div class="meta-item">
+      <span>{metadata.edition_tag}</span>
+    </div>
+  </div>
+</header>

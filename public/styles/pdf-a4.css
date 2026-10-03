@@ -1,0 +1,157 @@
+/* ==========================================================================
+   STYLE IMPRESSION ÉDITION JOURNAL — FORMAT A4 PORTRAIT
+   Conçu pour une sortie papier et PDF haute fidélité (210mm x 297mm)
+   ========================================================================== */
+
+@page {
+  size: A4 portrait;
+  margin: 10mm;
+}
+
+:root {
+  --a4-width: 210mm;
+  --a4-min-height: 297mm;
+  --pdf-ink: #111111;
+  --pdf-ink-muted: #555555;
+  --pdf-border: #1a1a1a;
+  --pdf-border-light: #cccccc;
+}
+
+body.pdf-preview-mode {
+  background-color: #525659;
+  margin: 0;
+  padding: 20px 0;
+  font-family: 'Newsreader', 'Georgia', serif;
+  color: var(--pdf-ink);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* Barre flottante d'impression */
+.pdf-action-bar {
+  position: sticky;
+  top: 10px;
+  z-index: 1000;
+  max-width: 800px;
+  margin: 0 auto 20px auto;
+  background: #ffffff;
+  padding: 12px 20px;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.85rem;
+}
+
+.pdf-print-btn {
+  background-color: #121212;
+  color: #ffffff;
+  border: none;
+  padding: 8px 18px;
+  font-weight: 700;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  transition: background 0.15s ease;
+}
+
+.pdf-print-btn:hover {
+  background-color: #333333;
+}
+
+/* Page virtuelle A4 */
+.a4-page-sheet {
+  width: var(--a4-width);
+  min-height: var(--a4-min-height);
+  background: #ffffff;
+  margin: 0 auto 30px auto;
+  padding: 12mm 12mm 10mm 12mm;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  page-break-after: always;
+  break-after: page;
+}
+
+/* En-tête de page A4 pour pages intérieures */
+.a4-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-bottom: 2px solid var(--pdf-border);
+  padding-bottom: 4px;
+  margin-bottom: 12px;
+}
+
+.a4-page-footer {
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-top: 1px solid var(--pdf-border);
+  padding-top: 6px;
+  color: var(--pdf-ink-muted);
+}
+
+/* Typographie spécifique format journal A4 */
+.pdf-headline {
+  font-family: 'Playfair Display', serif;
+  font-weight: 900;
+  line-height: 1.1;
+  color: #000000;
+}
+
+.pdf-lead {
+  font-family: 'Newsreader', serif;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  text-align: justify;
+}
+
+.pdf-text {
+  font-family: 'Newsreader', serif;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  text-align: justify;
+  hyphens: auto;
+}
+
+/* Rendu à l'impression directe (@media print) */
+@media print {
+  body.pdf-preview-mode {
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  .pdf-action-bar {
+    display: none !important;
+  }
+
+  .a4-page-sheet {
+    box-shadow: none !important;
+    margin: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: auto !important;
+    padding: 0 !important;
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+}

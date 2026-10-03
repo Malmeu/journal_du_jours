@@ -1,0 +1,22 @@
+# Dépendances
+node_modules/
+
+# Sorties de build
+dist/
+.astro/
+
+# Base de données locale générée au runtime
+data/*.db
+data/*.db-wal
+data/*.db-shm
+
+# Variables d'environnement
+.env
+.env.production
+.env.local
+
+# Fichiers OS & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

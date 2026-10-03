@@ -1,0 +1,61 @@
+---
+interface Props {
+  priorities: Array<{ item_num: string; title: string; subtitle?: string }>;
+  todos: Array<{ item_num: string; title: string; subtitle?: string }>;
+}
+
+const { priorities, todos } = Astro.props;
+---
+
+<div class="sidebar-priorities-block">
+  <!-- Section Priorités -->
+  <div style="margin-bottom: 22px;">
+    <h3 class="sidebar-section-title">Priorites</h3>
+    <ul class="priority-list">
+      {priorities.map((item) => (
+        <li class="priority-item">
+          <span class="priority-num">{item.item_num}</span>
+          <span class="priority-text">{item.title}</span>
+        </li>
+      ))}
+    </ul>
+  </div>
+
+  <div class="rule-thin" style="opacity: 0.7;"></div>
+
+  <!-- Section À ne pas oublier -->
+  <div style="margin-top: 18px; margin-bottom: 22px;">
+    <h3 class="sidebar-section-title">A ne pas oublier</h3>
+    <ul class="priority-list">
+      {todos.map((item) => (
+        <li class="priority-item">
+          <span class="priority-num">{item.item_num}</span>
+          <span class="priority-text">{item.title}</span>
+        </li>
+      ))}
+    </ul>
+  </div>
+
+  <div class="rule-thin" style="opacity: 0.7;"></div>
+
+  <!-- Repères Économiques & Marchés DZ & Monde -->
+  <div class="market-strip" style="margin-top: 18px;">
+    <div class="market-strip-title">Repères & Devises (Banque d'Algérie)</div>
+    <div class="market-item">
+      <span>1 EUR / DZD</span>
+      <strong>146,80 DA</strong>
+    </div>
+    <div class="market-item">
+      <span>1 USD / DZD</span>
+      <strong>134,25 DA</strong>
+    </div>
+    <div class="market-item">
+      <span>Pétrole Brent</span>
+      <strong>78,40 $</strong>
+    </div>
+    <div class="market-item">
+      <span>Or (Gramme 24k)</span>
+      <strong>11 450 DA</strong>
+    </div>
+  </div>
+</div>

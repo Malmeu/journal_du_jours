@@ -1,0 +1,221 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getArticleBySlug, getAllArticles, getEditionMetadata } from '../../lib/db.js';
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+const article = getArticleBySlug(slug as string);
+
+if (!article) {
+  return Astro.redirect('/404');
+}
+
+const metadata = getEditionMetadata();
+const allArticles = getAllArticles();
+const currentIndex = allArticles.findIndex((a: any) => a.slug === article.slug);
+const prevArticle = currentIndex > 0 ? allArticles[currentIndex - 1] : null;
+const nextArticle = currentIndex < allArticles.length - 1 ? allArticles[currentIndex + 1] : null;
+
+// Conversion du contenu Markdown simple en HTML pour le rendu de presse
+function formatArticleContent(rawContent: string) {
+  let html = rawContent
+    // Titres H2
+    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+    // Titres H3
+    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+    // Citations blockquote
+    .replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>')
+    // Gras
+    .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+    // Italique
+    .replace(/\*(.*?)\*/gim, '<em>$1</em>')
+    // Listes à puces
+    .replace(/^\- (.*$)/gim, '<li>$1</li>')
+    // Listes numérotées
+    .replace(/^[0-9]+\. (.*$)/gim, '<li>$1</li>');
+
+  // Envelopper les paragraphes
+  const blocks = html.split(/\n\s*\n/);
+  return blocks.map(block => {
+    block = block.trim();
+    if (!block) return '';
+    if (block.startsWith('<h2') || block.startsWith('<h3') || block.startsWith('<blockquote')) {
+      return block;
+    }
+    if (block.startsWith('<li>')) {
+      return `<ul class="article-list">${block}</ul>`;
+    }
+    return `<p>${block}</p>`;
+  }).join('\n');
+}
+
+const formattedContent = formatArticleContent(article.content);
+---
+
+<Layout
+  title={`${article.title} — ${metadata.paper_name}`}
+  description={article.summary}
+  isArticle={true}
+>
+  <div class="reader-container">
+    
+    <!-- Barre Supérieure de Navigation & Confort de Lecture -->
+    <header class="reader-top-nav no-print">
+      <a href="/" class="back-to-edition">
+        ← Retour à l'Édition
+      </a>
+
+      <!-- Boîte à outils de lecture sans distraction -->
+      <div class="reader-toolbar">
+        
+        <!-- Ajustement de la taille de texte -->
+        <div class="font-resizer" title="Ajuster la taille du texte">
+          <button type="button" id="btn-font-smaller" aria-label="Réduire la police">A-</button>
+          <button type="button" id="btn-font-larger" aria-label="Agrandir la police">A+</button>
+        </div>
+
+        <!-- Thèmes de lecture -->
+        <button
+          type="button"
+          class="reader-control-btn"
+          title="Papier Journal"
+          onclick="window.setJournalTheme('paper')"
+        >
+          📰 Papier
+        </button>
+        <button
+          type="button"
+          class="reader-control-btn"
+          title="Mode Clair Épuré"
+          onclick="window.setJournalTheme('light')"
+        >
+          ☀️ Clair
+        </button>
+        <button
+          type="button"
+          class="reader-control-btn"
+          title="Encre de Nuit"
+          onclick="window.setJournalTheme('dark')"
+        >
+          🌙 Nuit
+        </button>
+
+        <!-- Impression Presse -->
+        <button
+          type="button"
+          class="reader-control-btn"
+          title="Imprimer l'article au format presse"
+          onclick="window.print()"
+        >
+          🖨️ Imprimer
+        </button>
+      </div>
+    </header>
+
+    <!-- En-tête de l'Article -->
+    <article class="reader-article-content">
+      
+      <div class="article-header">
+        <span class="article-section-badge">{article.category_tag}</span>
+        
+        <h1 class="article-headline">{article.title}</h1>
+
+        {article.subtitle && (
+          <p class="article-standfirst">{article.subtitle}</p>
+        )}
+
+        <div class="article-meta-bar">
+          <div>
+            Par <strong>{article.author}</strong>
+          </div>
+          <div>
+            <span>Publié le {article.published_date}</span>
+            <span style="margin: 0 6px;">•</span>
+            <span>{article.read_time}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Espace Image Principal de l'Article -->
+      {article.image_url && (
+        <figure class="press-figure" style="margin: 24px 0;">
+          <img
+            src={article.image_url}
+            alt={article.title}
+            loading="eager"
+            fetchpriority="high"
+          />
+          {article.image_caption && (
+            <figcaption class="press-caption">
+              {article.image_caption}
+            </figcaption>
+          )}
+        </figure>
+      )}
+
+      <!-- Corps du Texte avec Lettrine & Typographie Immersive -->
+      <div class="article-body" id="article-body-text" set:html={formattedContent} />
+
+      <!-- Fin de l'article & Pied éditorial -->
+      <div class="rule-double" style="margin: 40px 0 20px 0;"></div>
+
+      <div style="font-family: var(--font-sans); font-size: 0.78rem; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 30px;">
+        {metadata.paper_name} • Édition du {metadata.edition_date} • {metadata.edition_number}
+      </div>
+
+      <!-- Navigation entre articles -->
+      <nav class="article-prev-next no-print" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border-top: 1px solid var(--border-line-light); padding-top: 20px;">
+        {prevArticle ? (
+          <div>
+            <div style="font-family: var(--font-sans); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--ink-muted);">← Article précédent</div>
+            <a href={`/article/${prevArticle.slug}`} style="font-family: var(--font-headline); font-size: 1.05rem; font-weight: 700; color: inherit; text-decoration: none;">
+              {prevArticle.title}
+            </a>
+          </div>
+        ) : <div></div>}
+
+        {nextArticle && (
+          <div style="text-align: right;">
+            <div style="font-family: var(--font-sans); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--ink-muted);">Article suivant →</div>
+            <a href={`/article/${nextArticle.slug}`} style="font-family: var(--font-headline); font-size: 1.05rem; font-weight: 700; color: inherit; text-decoration: none;">
+              {nextArticle.title}
+            </a>
+          </div>
+        )}
+      </nav>
+
+    </article>
+
+  </div>
+
+  <script is:inline>
+    // Contrôle de la taille de texte pour la lecture sans distraction
+    (function() {
+      const articleBody = document.getElementById('article-body-text');
+      const btnSmaller = document.getElementById('btn-font-smaller');
+      const btnLarger = document.getElementById('btn-font-larger');
+      
+      let currentSize = parseInt(localStorage.getItem('reader-font-size') || '19', 10);
+      
+      function updateSize(newSize) {
+        currentSize = Math.max(15, Math.min(26, newSize));
+        if (articleBody) {
+          articleBody.style.fontSize = currentSize + 'px';
+        }
+        localStorage.setItem('reader-font-size', currentSize.toString());
+      }
+
+      if (articleBody) {
+        articleBody.style.fontSize = currentSize + 'px';
+      }
+
+      if (btnSmaller) {
+        btnSmaller.addEventListener('click', () => updateSize(currentSize - 2));
+      }
+      if (btnLarger) {
+        btnLarger.addEventListener('click', () => updateSize(currentSize + 2));
+      }
+    })();
+  </script>
+</Layout>

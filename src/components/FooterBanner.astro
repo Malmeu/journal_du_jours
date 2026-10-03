@@ -1,0 +1,34 @@
+---
+interface Props {
+  intentText: string;
+  paperName: string;
+  tagline: string;
+  pageNumber?: string;
+}
+
+const {
+  intentText,
+  paperName = 'MALMEU MATIN — DZ TECH',
+  tagline = 'VEILLE STARTUPS, SAAS & INTELLIGENCE ARTIFICIELLE EN ALGÉRIE',
+  pageNumber = '1'
+} = Astro.props;
+---
+
+<footer class="newspaper-footer-banner">
+  <!-- Double filet noir d'imprimerie -->
+  <div class="rule-double"></div>
+
+  <!-- Intention du jour -->
+  <div class="intent-block" style="padding: 10px 0 16px 0;">
+    <div class="intent-header">Intention du jour</div>
+    <div class="intent-text">{intentText}</div>
+  </div>
+
+  <div class="rule-thin"></div>
+
+  <!-- Ligne de bas de page avec pagination d'édition -->
+  <div class="newspaper-bottom-strip">
+    <span>{paperName} — {tagline}</span>
+    <span>{pageNumber}</span>
+  </div>
+</footer>

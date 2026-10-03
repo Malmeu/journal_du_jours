@@ -1,0 +1,271 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Masthead from '../components/Masthead.astro';
+import SectionNav from '../components/SectionNav.astro';
+import WeatherWidget from '../components/WeatherWidget.astro';
+import SidebarPriorities from '../components/SidebarPriorities.astro';
+import HeadlineStory from '../components/HeadlineStory.astro';
+import BriefStories from '../components/BriefStories.astro';
+import FooterBanner from '../components/FooterBanner.astro';
+
+import {
+  getEditionMetadata,
+  getWeather,
+  getEditorialNotes,
+  getHeadlineArticle,
+  getBriefArticles,
+  getFeaturedArticles
+} from '../lib/db.js';
+
+const metadata = getEditionMetadata();
+const weather = getWeather();
+const notes = getEditorialNotes();
+const headline = getHeadlineArticle();
+const briefs = getBriefArticles();
+const featuredArticles = getFeaturedArticles();
+
+// Séparation par cahiers et rubriques générales
+const algerieArticles = featuredArticles.filter((a: any) => a.section === 'algerie');
+const worldArticles = featuredArticles.filter((a: any) => a.section === 'monde');
+const sportArticles = featuredArticles.filter((a: any) => a.section === 'sport');
+const cultureArticles = featuredArticles.filter((a: any) => a.section === 'art-culture');
+const techArticles = featuredArticles.filter((a: any) => a.section === 'economie-tech');
+const opinionArticles = featuredArticles.filter((a: any) => a.section === 'tribune');
+---
+
+<Layout
+  title={`${metadata.paper_name} — ${metadata.edition_date}`}
+  description={metadata.motto}
+>
+  <main class="newspaper-container">
+    <!-- En-tête / Masthead du journal -->
+    <Masthead metadata={metadata} />
+
+    <!-- Barre de rubriques & modes de confort de lecture -->
+    <SectionNav currentSection="tous" />
+
+    <!-- Grille Broadsheet Principale (Disposition Gazette Authentique) -->
+    <div class="newspaper-broadsheet-grid">
+      
+      <!-- COLONNE GAUCHE (Météo, Priorités, Agenda, Repères) -->
+      <aside class="sidebar-col">
+        <WeatherWidget weather={weather} />
+        
+        <div class="rule-thin"></div>
+
+        <SidebarPriorities
+          priorities={notes.priorities}
+          todos={notes.todos}
+        />
+      </aside>
+
+      <!-- COLONNE PRINCIPALE (La Une, En bref, Dossiers & Cahiers) -->
+      <section class="main-content-col">
+        
+        <!-- ARTICLE PRINCIPAL DE LA UNE -->
+        {headline && <HeadlineStory article={headline} />}
+
+        <!-- SECTION EN BREF (3 Colonnes Découpées par des Filets Verticaux) -->
+        {briefs.length > 0 && <BriefStories briefs={briefs} />}
+
+        <!-- CAHIER 1 : POLITIQUE & SOCIÉTÉ EN ALGÉRIE -->
+        {algerieArticles.length > 0 && (
+          <section class="editorial-section">
+            <h2 class="editorial-section-title">Politique & Société — Algérie</h2>
+            
+            <div class="editorial-articles-grid">
+              {algerieArticles.slice(0, 4).map((art: any) => (
+                <article class="article-card">
+                  <span class="card-category">{art.category_tag}</span>
+                  <h3 class="card-title">
+                    <a href={`/article/${art.slug}`}>{art.title}</a>
+                  </h3>
+                  
+                  {art.image_url && (
+                    <div class="article-card-image">
+                      <img src={art.image_url} alt={art.title} loading="lazy" />
+                    </div>
+                  )}
+
+                  <p class="card-excerpt">{art.summary}</p>
+
+                  <div style="margin-top: auto; padding-top: 6px;">
+                    <a href={`/article/${art.slug}`} class="read-link-btn" style="font-size: 0.75rem;">
+                      Lire la suite ({art.read_time}) →
+                    </a>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <!-- CAHIER 2 : GÉOPOLITIQUE & MONDE -->
+        {worldArticles.length > 0 && (
+          <section class="editorial-section">
+            <h2 class="editorial-section-title">Géopolitique & Actualité Mondiale</h2>
+            
+            <div class="editorial-articles-grid">
+              {worldArticles.slice(0, 4).map((art: any) => (
+                <article class="article-card">
+                  <span class="card-category">{art.category_tag}</span>
+                  <h3 class="card-title">
+                    <a href={`/article/${art.slug}`}>{art.title}</a>
+                  </h3>
+                  
+                  {art.image_url && (
+                    <div class="article-card-image">
+                      <img src={art.image_url} alt={art.title} loading="lazy" />
+                    </div>
+                  )}
+
+                  <p class="card-excerpt">{art.summary}</p>
+
+                  <div style="margin-top: auto; padding-top: 6px;">
+                    <a href={`/article/${art.slug}`} class="read-link-btn" style="font-size: 0.75rem;">
+                      Lire l'analyse complète ({art.read_time}) →
+                    </a>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <!-- CAHIER 3 : SPORTS & COMPÉTITIONS -->
+        {sportArticles.length > 0 && (
+          <section class="editorial-section">
+            <h2 class="editorial-section-title">⚽ Sports & Compétitions (Algérie & Monde)</h2>
+            
+            <div class="editorial-articles-grid">
+              {sportArticles.slice(0, 4).map((art: any) => (
+                <article class="article-card">
+                  <span class="card-category">{art.category_tag}</span>
+                  <h3 class="card-title">
+                    <a href={`/article/${art.slug}`}>{art.title}</a>
+                  </h3>
+                  
+                  {art.image_url && (
+                    <div class="article-card-image">
+                      <img src={art.image_url} alt={art.title} loading="lazy" />
+                    </div>
+                  )}
+
+                  <p class="card-excerpt">{art.summary}</p>
+
+                  <div style="margin-top: auto; padding-top: 6px;">
+                    <a href={`/article/${art.slug}`} class="read-link-btn" style="font-size: 0.75rem;">
+                      Lire le compte-rendu ({art.read_time}) →
+                    </a>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <!-- CAHIER 4 : ART, CULTURE & SOCIÉTÉ -->
+        {cultureArticles.length > 0 && (
+          <section class="editorial-section">
+            <h2 class="editorial-section-title">🎭 Art, Culture & Création</h2>
+            
+            <div class="editorial-articles-grid">
+              {cultureArticles.slice(0, 4).map((art: any) => (
+                <article class="article-card">
+                  <span class="card-category">{art.category_tag}</span>
+                  <h3 class="card-title">
+                    <a href={`/article/${art.slug}`}>{art.title}</a>
+                  </h3>
+                  
+                  {art.image_url && (
+                    <div class="article-card-image">
+                      <img src={art.image_url} alt={art.title} loading="lazy" />
+                    </div>
+                  )}
+
+                  <p class="card-excerpt">{art.summary}</p>
+
+                  <div style="margin-top: auto; padding-top: 6px;">
+                    <a href={`/article/${art.slug}`} class="read-link-btn" style="font-size: 0.75rem;">
+                      Lire la chronique ({art.read_time}) →
+                    </a>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <!-- CAHIER 5 : ÉCONOMIE & TECHNOLOGIES -->
+        {techArticles.length > 0 && (
+          <section class="editorial-section">
+            <h2 class="editorial-section-title">Économie & Innovations Technologiques</h2>
+            
+            <div class="editorial-articles-grid">
+              {techArticles.slice(0, 4).map((art: any) => (
+                <article class="article-card">
+                  <span class="card-category">{art.category_tag}</span>
+                  <h3 class="card-title">
+                    <a href={`/article/${art.slug}`}>{art.title}</a>
+                  </h3>
+                  
+                  {art.image_url && (
+                    <div class="article-card-image">
+                      <img src={art.image_url} alt={art.title} loading="lazy" />
+                    </div>
+                  )}
+
+                  <p class="card-excerpt">{art.summary}</p>
+
+                  <div style="margin-top: auto; padding-top: 6px;">
+                    <a href={`/article/${art.slug}`} class="read-link-btn" style="font-size: 0.75rem;">
+                      Lire la suite ({art.read_time}) →
+                    </a>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <!-- SECTION FENÊTRE LIBRE / TRIBUNE -->
+        {opinionArticles.length > 0 && (
+          <section class="editorial-section" style="background-color: var(--bg-paper-card); padding: 16px; border: 1px solid var(--border-line-light);">
+            <div style="font-family: var(--font-sans); font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-muted);">
+              Fenêtre libre / Chronique du Matin
+            </div>
+            
+            {opinionArticles.map((art: any) => (
+              <div style="margin-top: 8px;">
+                <h3 style="font-family: var(--font-headline); font-size: 1.3rem; font-style: italic; margin-bottom: 6px;">
+                  <a href={`/article/${art.slug}`} style="color: inherit; text-decoration: none;">
+                    {art.title}
+                  </a>
+                </h3>
+                <p style="font-family: var(--font-body); font-size: 0.95rem; line-height: 1.5; color: var(--ink-secondary);">
+                  {art.summary}
+                </p>
+                <div style="margin-top: 8px;">
+                  <a href={`/article/${art.slug}`} class="read-link-btn" style="font-size: 0.75rem;">
+                    Lire la tribune →
+                  </a>
+                </div>
+              </div>
+            ))}
+          </section>
+        )}
+
+      </section>
+
+    </div>
+
+    <!-- BANDEAU INFÉRIEUR / INTENTION DU JOUR -->
+    <FooterBanner
+      intentText={metadata.intent_of_day}
+      paperName={metadata.paper_name.toUpperCase()}
+      tagline={metadata.top_right_banner}
+      pageNumber="1"
+    />
+
+  </main>
+</Layout>

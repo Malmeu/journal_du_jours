@@ -1,0 +1,31 @@
+---
+interface BriefItem {
+  slug: string;
+  title: string;
+  category_tag: string;
+  summary: string;
+}
+
+interface Props {
+  briefs: BriefItem[];
+}
+
+const { briefs } = Astro.props;
+---
+
+<section class="en-bref-section">
+  <h2 class="en-bref-header">En bref</h2>
+  <div class="en-bref-grid">
+    {briefs.map((item) => (
+      <article class="en-bref-card">
+        <span class="brief-meta">{item.category_tag}</span>
+        <h3 class="brief-title">
+          <a href={`/article/${item.slug}`}>
+            {item.title}
+          </a>
+        </h3>
+        <p class="brief-excerpt">{item.summary}</p>
+      </article>
+    ))}
+  </div>
+</section>

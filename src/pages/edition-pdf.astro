@@ -1,0 +1,398 @@
+---
+import {
+  getEditionMetadata,
+  getWeather,
+  getEditorialNotes,
+  getHeadlineArticle,
+  getBriefArticles,
+  getArticlesBySection
+} from '../lib/db.js';
+
+export const prerender = false;
+
+const metadata = getEditionMetadata();
+const weather = getWeather();
+const notes = getEditorialNotes();
+const headline = getHeadlineArticle();
+const briefs = getBriefArticles();
+
+const algerieArticles = getArticlesBySection('algerie').slice(0, 4);
+const mondeArticles = getArticlesBySection('monde').slice(0, 4);
+const sportArticles = getArticlesBySection('sport').slice(0, 3);
+const cultureArticles = getArticlesBySection('art-culture').slice(0, 2);
+const techArticles = getArticlesBySection('economie-tech').slice(0, 2);
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{metadata.paper_name} — Édition Complète Imprimable (Format A4)</title>
+    
+    <!-- Polices éditoriales de presse -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Newsreader:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Playfair+Display:ital,wght@0,700;0,900;1,400;1,700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/styles/journal.css" />
+    <link rel="stylesheet" href="/styles/pdf-a4.css" />
+  </head>
+  <body class="pdf-preview-mode">
+    
+    <!-- BARRE D'ACTION FLOTTANTE POUR L'UTILISATEUR (Masquée lors de l'impression) -->
+    <div class="pdf-action-bar no-print">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <a href="/" style="color: #111; text-decoration: none; font-weight: 700;">
+          ← Retour au journal interactif
+        </a>
+        <span style="color: #ccc;">|</span>
+        <span>Édition A4 Portrait (4 Pages)</span>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <button type="button" class="pdf-print-btn" onclick="window.print()">
+          🖨️ Télécharger en PDF / Imprimer A4
+        </button>
+      </div>
+    </div>
+
+    <!-- ======================================================================
+         PAGE 1 : LA UNE OFFICIELLE (BROADSHEET A4)
+         ====================================================================== -->
+    <div class="a4-page-sheet">
+      
+      <!-- En-tête / Masthead -->
+      <div class="rule-thin"></div>
+      <div style="display: flex; justify-content: space-between; font-family: 'Inter', sans-serif; font-size: 0.62rem; font-weight: 700; text-transform: uppercase; padding: 2px 0;">
+        <span>{metadata.top_left_banner}</span>
+        <span>{metadata.top_right_banner}</span>
+      </div>
+      <div class="rule-thin" style="opacity: 0.5;"></div>
+
+      <div style="text-align: center; padding: 10px 0 6px 0;">
+        <div style="font-family: 'Playfair Display', serif; font-size: 2.8rem; font-weight: 900; line-height: 1.05; letter-spacing: -0.02em;">
+          Malmeu <em>Matin</em> <span style="font-weight: 300;">—</span> <em>Algérie & Monde</em>
+        </div>
+        <p style="font-family: 'Newsreader', serif; font-style: italic; font-size: 0.88rem; color: #444; margin-top: 2px;">
+          {metadata.motto}
+        </p>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; font-family: 'Inter', sans-serif; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; border-top: 1px solid #000; border-bottom: 2px solid #000; padding: 3px 0; margin-bottom: 12px;">
+        <span>{metadata.edition_number}</span>
+        <span style="letter-spacing: 0.1em;">{metadata.edition_date}</span>
+        <span>{metadata.edition_tag}</span>
+      </div>
+
+      <!-- Grille 2 Colonnes de la Une -->
+      <div style="display: grid; grid-template-columns: 195px 1fr; gap: 14px; flex: 1;">
+        
+        <!-- Colonne Gauche : Météo, Priorités, Repères -->
+        <aside style="border-right: 1px solid #000; padding-right: 12px; display: flex; flex-direction: column; gap: 12px;">
+          
+          <!-- Météo A4 -->
+          <div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #000; font-family: 'Inter', sans-serif; padding-bottom: 2px;">
+              <span style="font-size: 0.68rem; font-weight: 800;">{weather.city}</span>
+              <span style="font-family: 'Playfair Display', serif; font-style: italic; font-size: 0.85rem;">Meteo</span>
+            </div>
+            
+            <div style="display: flex; align-items: baseline; gap: 10px; margin-top: 6px;">
+              <span style="font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 800; line-height: 1;">
+                {weather.temp}°
+              </span>
+              <span style="font-family: 'Inter', sans-serif; font-size: 0.62rem; font-weight: 800; text-transform: uppercase;">
+                {weather.condition}
+              </span>
+            </div>
+
+            <div style="font-family: 'Inter', sans-serif; font-size: 0.65rem; line-height: 1.3; color: #444; margin-top: 4px;">
+              {weather.wind}
+            </div>
+            <div style="font-family: 'Inter', sans-serif; font-size: 0.6rem; font-weight: 700; color: #777; margin-top: 2px;">
+              MIN {weather.temp_min} / MAX {weather.temp_max} DEG
+            </div>
+            <div style="border-left: 2px solid #000; padding-left: 6px; font-family: 'Newsreader', serif; font-style: italic; font-size: 0.72rem; margin-top: 6px; line-height: 1.25;">
+              {weather.note}
+            </div>
+          </div>
+
+          <div class="rule-thin"></div>
+
+          <!-- Priorités -->
+          <div>
+            <div style="font-family: 'Playfair Display', serif; font-size: 0.95rem; font-weight: 900; border-bottom: 1px solid #000; padding-bottom: 2px; margin-bottom: 6px;">
+              Priorités
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.72rem;">
+              {notes.priorities.map((item: any) => (
+                <div style="display: flex; gap: 6px; align-items: baseline;">
+                  <strong style="font-family: monospace; font-size: 0.68rem; color: #666;">{item.item_num}</strong>
+                  <span style="font-family: 'Playfair Display', serif; font-weight: 700; line-height: 1.25;">{item.title}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div class="rule-thin"></div>
+
+          <!-- Devises -->
+          <div style="background: #fbfbfb; border: 1px solid #ddd; padding: 6px; font-family: 'Inter', sans-serif; font-size: 0.62rem;">
+            <div style="font-weight: 800; text-transform: uppercase; border-bottom: 1px solid #ddd; padding-bottom: 2px; margin-bottom: 4px; color: #666;">
+              Marchés & Devises (DZD)
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 1px 0;">
+              <span>1 EUR</span><strong>146,80 DA</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 1px 0;">
+              <span>1 USD</span><strong>134,25 DA</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 1px 0;">
+              <span>Brent</span><strong>78,40 $</strong>
+            </div>
+          </div>
+
+        </aside>
+
+        <!-- Colonne Droite : Article de Une et En bref -->
+        <main style="display: flex; flex-direction: column; gap: 10px;">
+          
+          {headline && (
+            <article>
+              <div style="font-family: 'Inter', sans-serif; font-size: 0.62rem; font-weight: 800; text-transform: uppercase; color: #666;">
+                {headline.category_tag}
+              </div>
+              <h1 style="font-family: 'Playfair Display', serif; font-size: 1.45rem; font-weight: 900; line-height: 1.15; margin: 4px 0 6px 0;">
+                {headline.title}
+              </h1>
+
+              {headline.image_url && (
+                <figure style="border: 1px solid #000; padding: 3px; background: #fff; margin-bottom: 6px;">
+                  <img
+                    src={headline.image_url}
+                    alt={headline.title}
+                    style="width: 100%; height: 160px; object-fit: cover; display: block;"
+                  />
+                  {headline.image_caption && (
+                    <figcaption style="font-family: 'Newsreader', serif; font-style: italic; font-size: 0.65rem; color: #555; padding-top: 3px;">
+                      {headline.image_caption}
+                    </figcaption>
+                  )}
+                </figure>
+              )}
+
+              <p class="pdf-lead" style="font-size: 0.8rem; line-height: 1.35; margin-bottom: 4px;">
+                {headline.summary}
+              </p>
+            </article>
+          )}
+
+          <div class="rule-thin" style="margin: 4px 0;"></div>
+
+          <!-- Section En Bref A4 (3 colonnes) -->
+          <div>
+            <div style="font-family: 'Playfair Display', serif; font-size: 0.95rem; font-weight: 900; margin-bottom: 6px;">
+              En bref
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+              {briefs.map((b: any, i: number) => (
+                <div style={`border-right: ${i < 2 ? '1px solid #000' : 'none'}; padding-right: ${i < 2 ? '8px' : '0'}; display: flex; flex-direction: column; gap: 3px;`}>
+                  <span style="font-family: 'Inter', sans-serif; font-size: 0.55rem; font-weight: 800; text-transform: uppercase; color: #777;">
+                    {b.category_tag}
+                  </span>
+                  <h4 style="font-family: 'Playfair Display', serif; font-size: 0.76rem; font-weight: 800; line-height: 1.2;">
+                    {b.title}
+                  </h4>
+                  <p style="font-family: 'Newsreader', serif; font-size: 0.68rem; line-height: 1.3; color: #444;">
+                    {b.summary.slice(0, 130)}...
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </main>
+      </div>
+
+      <!-- Intention du jour & Pied de page 1 -->
+      <div style="margin-top: auto; border-top: 2px solid #000; padding-top: 6px;">
+        <div style="font-family: 'Inter', sans-serif; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; color: #777;">
+          Intention du jour
+        </div>
+        <div style="font-family: 'Playfair Display', serif; font-style: italic; font-size: 0.92rem; font-weight: 700; margin-top: 1px;">
+          {metadata.intent_of_day}
+        </div>
+      </div>
+
+      <div class="a4-page-footer">
+        <span>{metadata.paper_name.toUpperCase()} — ÉDITION DU {metadata.edition_date}</span>
+        <span>PAGE 1</span>
+      </div>
+    </div>
+
+    <!-- ======================================================================
+         PAGE 2 : CAHIER POLITIQUE NATIONALE & ACTUALITÉS ALGÉRIE
+         ====================================================================== -->
+    <div class="a4-page-sheet">
+      <div class="a4-page-header">
+        <span>CAHIER 1 — POLITIQUE, INSTITUTIONS & TERRITOIRES D'ALGÉRIE</span>
+        <span>{metadata.edition_date}</span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; flex: 1;">
+        {algerieArticles.map((art: any) => (
+          <article style="display: flex; flex-direction: column; gap: 4px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">
+            <span style="font-family: 'Inter', sans-serif; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; color: #8c1d1d;">
+              {art.category_tag}
+            </span>
+            <h3 style="font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 800; line-height: 1.2;">
+              {art.title}
+            </h3>
+
+            {art.image_url && (
+              <div style="border: 1px solid #ccc; margin: 4px 0;">
+                <img src={art.image_url} alt={art.title} style="width: 100%; height: 110px; object-fit: cover; display: block;" />
+              </div>
+            )}
+
+            <p class="pdf-text">
+              {art.content ? art.content.slice(0, 360) + '...' : art.summary}
+            </p>
+
+            <div style="margin-top: auto; font-family: 'Inter', sans-serif; font-size: 0.58rem; color: #888;">
+              Par <strong>{art.author}</strong> • {art.published_date}
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div class="a4-page-footer">
+        <span>{metadata.paper_name.toUpperCase()} — ACTUALITÉS ALGÉRIE</span>
+        <span>PAGE 2</span>
+      </div>
+    </div>
+
+    <!-- ======================================================================
+         PAGE 3 : CAHIER GÉOPOLITIQUE, DIPLOMATIE & MONDE
+         ====================================================================== -->
+    <div class="a4-page-sheet">
+      <div class="a4-page-header">
+        <span>CAHIER 2 — AFFAIRES INTERNATIONALES & GÉOPOLITIQUE MONDIALE</span>
+        <span>{metadata.edition_date}</span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; flex: 1;">
+        {mondeArticles.map((art: any) => (
+          <article style="display: flex; flex-direction: column; gap: 4px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">
+            <span style="font-family: 'Inter', sans-serif; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; color: #8c1d1d;">
+              {art.category_tag}
+            </span>
+            <h3 style="font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 800; line-height: 1.2;">
+              {art.title}
+            </h3>
+
+            {art.image_url && (
+              <div style="border: 1px solid #ccc; margin: 4px 0;">
+                <img src={art.image_url} alt={art.title} style="width: 100%; height: 110px; object-fit: cover; display: block;" />
+              </div>
+            )}
+
+            <p class="pdf-text">
+              {art.content ? art.content.slice(0, 360) + '...' : art.summary}
+            </p>
+
+            <div style="margin-top: auto; font-family: 'Inter', sans-serif; font-size: 0.58rem; color: #888;">
+              Dépêche internationale • {art.author}
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div class="a4-page-footer">
+        <span>{metadata.paper_name.toUpperCase()} — GÉOPOLITIQUE & MONDE</span>
+        <span>PAGE 3</span>
+      </div>
+    </div>
+
+    <!-- ======================================================================
+         PAGE 4 : CAHIER SPORT, ART & CULTURE, TECHNOLOGIES
+         ====================================================================== -->
+    <div class="a4-page-sheet">
+      <div class="a4-page-header">
+        <span>CAHIER 3 — SPORT, CRÉATION ARTISTIQUE & TECHNOLOGIES</span>
+        <span>{metadata.edition_date}</span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1.1fr 1fr; gap: 18px; flex: 1;">
+        
+        <!-- Colonne Sport -->
+        <div style="display: flex; flex-direction: column; gap: 12px; border-right: 1px solid #000; padding-right: 14px;">
+          <div style="font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 900; border-bottom: 1px solid #000; padding-bottom: 2px;">
+            ⚽ Sports & Compétitions
+          </div>
+
+          {sportArticles.map((art: any) => (
+            <article style="display: flex; flex-direction: column; gap: 3px;">
+              <span style="font-family: 'Inter', sans-serif; font-size: 0.58rem; font-weight: 700; color: #666;">
+                {art.category_tag}
+              </span>
+              <h4 style="font-family: 'Playfair Display', serif; font-size: 0.88rem; font-weight: 800; line-height: 1.2;">
+                {art.title}
+              </h4>
+              <p class="pdf-text" style="font-size: 0.72rem;">
+                {art.summary}
+              </p>
+            </article>
+          ))}
+        </div>
+
+        <!-- Colonne Art & Tech & Tribune -->
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 900; border-bottom: 1px solid #000; padding-bottom: 2px;">
+            🎭 Art, Culture & Société
+          </div>
+
+          {cultureArticles.map((art: any) => (
+            <article style="display: flex; flex-direction: column; gap: 3px;">
+              <span style="font-family: 'Inter', sans-serif; font-size: 0.58rem; font-weight: 700; color: #666;">
+                {art.category_tag}
+              </span>
+              <h4 style="font-family: 'Playfair Display', serif; font-size: 0.88rem; font-weight: 800; line-height: 1.2;">
+                {art.title}
+              </h4>
+              <p class="pdf-text" style="font-size: 0.72rem;">
+                {art.summary}
+              </p>
+            </article>
+          ))}
+
+          <div class="rule-thin"></div>
+
+          <!-- Fenêtre libre -->
+          <div style="background: #fbfbfb; border: 1px solid #ddd; padding: 10px;">
+            <div style="font-family: 'Inter', sans-serif; font-size: 0.58rem; font-weight: 800; text-transform: uppercase; color: #888;">
+              Fenêtre libre / Chronique du Matin
+            </div>
+            <div style="font-family: 'Playfair Display', serif; font-style: italic; font-weight: 700; font-size: 0.88rem; margin: 4px 0;">
+              « L'art de la presse réside dans l'art de relier les mondes. »
+            </div>
+            <p style="font-family: 'Newsreader', serif; font-size: 0.7rem; line-height: 1.35; color: #444;">
+              De la politique aux terrains de sport, des toiles d'artistes aux circuits de silicium, le journal rassemble la communauté autour d'une lecture partagée, exigeante et sereine.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="a4-page-footer">
+        <span>{metadata.paper_name.toUpperCase()} — FIN DU NUMÉRO {metadata.edition_number}</span>
+        <span>PAGE 4</span>
+      </div>
+    </div>
+
+  </body>
+</html>

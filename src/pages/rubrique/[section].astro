@@ -1,0 +1,86 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Masthead from '../../components/Masthead.astro';
+import SectionNav from '../../components/SectionNav.astro';
+import FooterBanner from '../../components/FooterBanner.astro';
+import { getEditionMetadata, getArticlesBySection } from '../../lib/db.js';
+
+export const prerender = false;
+
+const { section } = Astro.params;
+const metadata = getEditionMetadata();
+
+const validSections: Record<string, string> = {
+  'algerie': "Cahier Algérie — Actualités Nationales & Territoires",
+  'monde': "Cahier Monde — Géopolitique & Actualité Internationale",
+  'sport': "Cahier Sport & Compétitions — Algérie & Monde",
+  'art-culture': "Cahier Art, Culture, Cinéma & Patrimoine",
+  'economie-tech': "Cahier Économie, Innovation & Tech DZ",
+  'tribune': "Cahier Opinions, Tribunes & Débats"
+};
+
+const sectionTitle = validSections[section as string] || "Rubrique Spéciale";
+const articles = getArticlesBySection(section as string);
+---
+
+<Layout
+  title={`${sectionTitle} — ${metadata.paper_name}`}
+  description={`Retrouvez tous les articles de la rubrique ${sectionTitle}.`}
+>
+  <main class="newspaper-container">
+    <Masthead metadata={metadata} />
+    <SectionNav currentSection={section} />
+
+    <section style="margin: 20px 0 30px 0;">
+      <div style="font-family: var(--font-sans); font-size: 0.75rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-crimson); margin-bottom: 4px;">
+        Édition Spécifique
+      </div>
+      <h1 style="font-family: var(--font-headline); font-size: 2.2rem; font-weight: 900; margin-bottom: 12px; border-bottom: 2px solid var(--border-line); padding-bottom: 8px;">
+        {sectionTitle}
+      </h1>
+      <p style="font-family: var(--font-body); font-style: italic; font-size: 1.1rem; color: var(--ink-secondary); margin-bottom: 24px;">
+        {articles.length} article(s) au sommaire de ce cahier.
+      </p>
+
+      <div class="editorial-articles-grid" style="grid-template-columns: repeat(2, 1fr); gap: 28px;">
+        {articles.map((art: any) => (
+          <article class="article-card" style="padding-bottom: 20px;">
+            <span class="card-category">{art.category_tag}</span>
+            <h2 class="card-title" style="font-size: 1.45rem;">
+              <a href={`/article/${art.slug}`}>{art.title}</a>
+            </h2>
+
+            {art.image_url && (
+              <div class="article-card-image" style="margin: 10px 0;">
+                <img src={art.image_url} alt={art.title} loading="lazy" />
+                {art.image_caption && (
+                  <div style="font-family: var(--font-body); font-size: 0.8rem; font-style: italic; color: var(--ink-muted); padding: 4px;">
+                    {art.image_caption}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <p class="card-excerpt">{art.summary}</p>
+
+            <div style="margin-top: auto; padding-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+              <a href={`/article/${art.slug}`} class="read-link-btn">
+                Lire l'article complet ({art.read_time}) →
+              </a>
+              <span style="font-family: var(--font-sans); font-size: 0.72rem; color: var(--ink-muted);">
+                {art.published_date}
+              </span>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <FooterBanner
+      intentText={metadata.intent_of_day}
+      paperName={metadata.paper_name.toUpperCase()}
+      tagline={metadata.top_right_banner}
+      pageNumber="2"
+    />
+  </main>
+</Layout>

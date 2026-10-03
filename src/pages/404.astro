@@ -1,0 +1,30 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Masthead from '../components/Masthead.astro';
+import SectionNav from '../components/SectionNav.astro';
+import { getEditionMetadata } from '../lib/db.js';
+
+const metadata = getEditionMetadata();
+---
+
+<Layout title={`Page introuvable — ${metadata.paper_name}`}>
+  <main class="newspaper-container">
+    <Masthead metadata={metadata} />
+    <SectionNav />
+
+    <div style="text-align: center; padding: 60px 20px; border-top: 1px solid var(--border-line); border-bottom: 2px solid var(--border-line); margin: 30px 0;">
+      <div style="font-family: var(--font-sans); font-size: 0.8rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent-crimson); margin-bottom: 10px;">
+        Erreur de Rédaction
+      </div>
+      <h1 style="font-family: var(--font-headline); font-size: 3.5rem; font-weight: 900; margin-bottom: 12px;">
+        404 — Article non répertorié
+      </h1>
+      <p style="font-family: var(--font-body); font-style: italic; font-size: 1.25rem; color: var(--ink-secondary); max-width: 600px; margin: 0 auto 24px auto;">
+        La dépêche ou la chronique que vous recherchez n'a pas été trouvée dans les archives de cette édition.
+      </p>
+      <a href="/" class="read-link-btn" style="font-size: 0.95rem;">
+        ← Revenir à la Une du journal
+      </a>
+    </div>
+  </main>
+</Layout>
